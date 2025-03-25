@@ -37,7 +37,7 @@ export const createTaskList = async (
 
     return newTaskListRef.id;
   } catch (error) {
-    throw new Error(`Error creating task list: ${error.message}`);
+    throw new Error(`Error creating task list: ${(error as any).message}`);
   }
 };
 
@@ -74,7 +74,7 @@ export const getUserTaskLists = async (userEmail: string) => {
 
     return uniqueLists;
   } catch (error) {
-    throw new Error(`Error retrieving task lists: ${error.message}`);
+    throw new Error(`Error retrieving task lists: ${(error as any).message}`);
   }
 };
 
@@ -83,7 +83,7 @@ export const updateTaskList = async (taskListId: string, newName: string) => {
     const taskListRef = doc(db, "taskLists", taskListId);
     await updateDoc(taskListRef, { name: newName });
   } catch (error) {
-    throw new Error(`Error updating task list: ${error.message}`);
+    throw new Error(`Error updating task list: ${(error as any).message}`);
   }
 };
 
@@ -95,7 +95,7 @@ export const updateTaskListParticipants = async (
     const taskListRef = doc(db, "taskLists", taskListId);
     await updateDoc(taskListRef, { participants });
   } catch (error) {
-    throw new Error(`Error updating participants: ${error.message}`);
+    throw new Error(`Error updating participants: ${(error as any).message}`);
   }
 };
 
@@ -104,7 +104,7 @@ export const deleteTaskList = async (taskListId: string) => {
     const taskListRef = doc(db, "taskLists", taskListId);
     await deleteDoc(taskListRef);
   } catch (error) {
-    throw new Error(`Error deleting task list: ${error.message}`);
+    throw new Error(`Error deleting task list: ${(error as any).message}`);
   }
 };
 
@@ -122,7 +122,7 @@ export const getParticipantsByListId = async (
       throw new Error("Task list not found");
     }
   } catch (error) {
-    throw new Error(`Error getting participants: ${error.message}`);
+    throw new Error(`Error getting participants: ${(error as any).message}`);
   }
 };
 
@@ -132,12 +132,13 @@ export const getTaskListById = async (listId: string) => {
     const listSnap = await getDoc(listRef);
 
     if (listSnap.exists()) {
-      return { id: listSnap.id, ...listSnap.data() };
+      const data = listSnap.data();
+      return { id: listSnap.id, name: data.name, ...data };
     } else {
       throw new Error("Task list not found");
     }
   } catch (error) {
-    throw new Error(`Error getting task list: ${error.message}`);
+    throw new Error(`Error getting task list: ${(error as any).message}`);
   }
 };
 
@@ -146,6 +147,6 @@ export const getListNameById = async (listId: string): Promise<string> => {
     const taskList = await getTaskListById(listId);
     return taskList.name || "Unnamed List";
   } catch (error) {
-    throw new Error(`Error getting list name: ${error.message}`);
+    throw new Error(`Error getting list name: ${(error as any).message}`);
   }
 };

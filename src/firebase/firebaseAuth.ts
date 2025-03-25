@@ -21,7 +21,6 @@ export const registerUser = async (
   password: string,
   role: string
 ) => {
-  const auth = getAuth();
   try {
     const userCredential = await createUserWithEmailAndPassword(
       auth,
@@ -77,6 +76,7 @@ export const loginUser = async (email: string, password: string) => {
       password
     );
     const user = userCredential.user;
+
     const token = await user.getIdToken();
 
     const userData = await getUserByUid(user.uid);
@@ -93,9 +93,13 @@ export const loginUser = async (email: string, password: string) => {
       token,
     };
   } catch (error) {
-    throw new Error(
-      error.message || "Failed to log in. Please check your credentials."
-    );
+    if (error instanceof Error) {
+      throw new Error(
+        error.message || "Failed to log in. Please check your credentials."
+      );
+    } else {
+      throw new Error("Failed to log in. Please check your credentials.");
+    }
   }
 };
 
@@ -134,6 +138,10 @@ export const getUserByUid = async (uid: string): Promise<UserData | null> => {
       return null;
     }
   } catch (error) {
-    throw new Error(`Error checking user in Firestore: ${error.message}`);
+    if (error instanceof Error) {
+      throw new Error(`Error checking user in Firestore: ${error.message}`);
+    } else {
+      throw new Error("Error checking user in Firestore: unknown error");
+    }
   }
 };

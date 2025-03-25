@@ -31,7 +31,11 @@ const Register = () => {
 
       router.push("/home");
     } catch (error) {
-      console.error("Registration error:", error.message);
+      if (error instanceof Error) {
+        console.error("Registration error:", error.message);
+      } else {
+        console.error("Registration error:", error);
+      }
     }
   };
 

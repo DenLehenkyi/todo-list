@@ -7,21 +7,8 @@ import React, {
 } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getUserByUid } from "@/firebase/firebaseAuth";
-
-interface User {
-  email: string;
-  uid: string;
-  role?: string;
-}
-
-interface UserContextType {
-  user: User | null;
-  token: string | null;
-  setUser: (user: User | null) => void;
-  setToken: (token: string | null) => void;
-  logout: () => void;
-  loading: boolean;
-}
+import { User } from "@/types/types";
+import { UserContextType } from "@/types/types";
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
@@ -44,7 +31,6 @@ const UserProvider = ({ children }: UserProviderProps) => {
         }
 
         if (firebaseUser) {
-          // User is signed in
           const idToken = await firebaseUser.getIdToken();
           const savedUser = localStorage.getItem("user");
 
@@ -52,10 +38,8 @@ const UserProvider = ({ children }: UserProviderProps) => {
           if (savedUser) {
             userData = JSON.parse(savedUser);
           } else {
-            // If no user data in localStorage, fetch from Firestore
             const firestoreUser = await getUserByUid(firebaseUser.uid);
             if (!firestoreUser) {
-              // If user doesn't exist in Firestore, log them out
               throw new Error("User does not exist in the database.");
             }
             userData = {
@@ -70,14 +54,17 @@ const UserProvider = ({ children }: UserProviderProps) => {
           localStorage.setItem("authToken", idToken);
           localStorage.setItem("user", JSON.stringify(userData));
         } else {
-          // User is not signed in
           setUser(null);
           setToken(null);
           localStorage.removeItem("authToken");
           localStorage.removeItem("user");
         }
       } catch (error) {
-        console.error("Error initializing user:", error.message);
+        if (error instanceof Error) {
+          console.error("Error initializing user:", error.message);
+        } else {
+          console.error("Error initializing user:", error);
+        }
         setUser(null);
         setToken(null);
         localStorage.removeItem("authToken");
@@ -87,7 +74,6 @@ const UserProvider = ({ children }: UserProviderProps) => {
       }
     });
 
-    // Cleanup the listener on unmount
     return () => unsubscribe();
   }, []);
 

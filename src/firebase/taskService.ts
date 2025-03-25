@@ -3,7 +3,6 @@ import {
   doc,
   getDocs,
   query,
-  where,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -22,7 +21,7 @@ export const getTasksByListId = async (listId: string) => {
 
     return tasks;
   } catch (error) {
-    throw new Error(`Error getting tasks: ${error.message}`);
+    throw new Error(`Error getting tasks: ${(error as any).message}`);
   }
 };
 
@@ -40,7 +39,7 @@ export const addTaskToList = async (
     );
     return newTaskRef.id;
   } catch (error) {
-    throw new Error(`Error adding task: ${error.message}`);
+    throw new Error(`Error adding task: ${(error as any).message}`);
   }
 };
 
@@ -53,7 +52,7 @@ export const updateTaskInListWithListId = async (
     const taskRef = doc(db, `taskLists/${listId}/tasks`, taskId);
     await updateDoc(taskRef, updates);
   } catch (error) {
-    throw new Error(`Error updating task: ${error.message}`);
+    throw new Error(`Error updating task: ${(error as any).message}`);
   }
 };
 
@@ -62,7 +61,7 @@ export const deleteTaskFromList = async (listId: string, taskId: string) => {
     const taskRef = doc(db, `taskLists/${listId}/tasks`, taskId);
     await deleteDoc(taskRef);
   } catch (error) {
-    throw new Error(`Error deleting task: ${error.message}`);
+    throw new Error(`Error deleting task: ${(error as any).message}`);
   }
 };
 
@@ -75,6 +74,8 @@ export const toggleTaskCompletion = async (
     const taskRef = doc(db, `taskLists/${taskListId}/tasks`, taskId);
     await updateDoc(taskRef, { completed });
   } catch (error) {
-    throw new Error(`Error toggling task completion: ${error.message}`);
+    throw new Error(
+      `Error toggling task completion: ${(error as any).message}`
+    );
   }
 };

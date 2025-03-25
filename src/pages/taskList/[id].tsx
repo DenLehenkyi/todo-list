@@ -9,34 +9,46 @@ import {
 } from "@/firebase/taskService";
 import {
   updateTaskListParticipants,
-  getParticipantsByListId,
   getTaskListById,
-  getListNameById, // Import the new function
+  getListNameById,
 } from "@/firebase/taskListService";
 import { useUser } from "@/contexts/AccountContext";
 import { FaCheckCircle, FaEdit, FaTrashAlt, FaUserPlus } from "react-icons/fa";
 import { green } from "@mui/material/colors";
 import Checkbox from "@mui/material/Checkbox";
 
+import {
+  Task,
+  Participant,
+  TaskList,
+  UserContextType,
+  RouterQuery,
+} from "@/types/types";
+
 const TaskPage = () => {
   const router = useRouter();
-  const { id: listId } = router.query;
-  const { user } = useUser();
+  const { id } = router.query as RouterQuery;
+  const listId: string = typeof id === "string" ? id : "";
+  const { user } = useUser() as UserContextType;
 
-  const [tasks, setTasks] = useState([]);
-  const [description, setDescription] = useState("");
-  const [newTaskName, setNewTaskName] = useState("");
-  const [editingTaskId, setEditingTaskId] = useState(null);
-  const [editedTaskName, setEditedTaskName] = useState("");
-  const [editedTaskDescription, setEditedTaskDescription] = useState("");
-  const [newParticipantEmail, setNewParticipantEmail] = useState("");
-  const [newParticipantRole, setNewParticipantRole] = useState("Viewer");
-  const [participants, setParticipants] = useState([]);
-  const [userRole, setUserRole] = useState("Viewer");
-  const [isOwner, setIsOwner] = useState(false);
-  const [listName, setListName] = useState("Task Manager"); // New state for the list name
-  const [loading, setLoading] = useState(true); // Add loading state
-  const [error, setError] = useState(null); // Add error state
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [description, setDescription] = useState<string>("");
+  const [newTaskName, setNewTaskName] = useState<string>("");
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editedTaskName, setEditedTaskName] = useState<string>("");
+  const [editedTaskDescription, setEditedTaskDescription] =
+    useState<string>("");
+  const [newParticipantEmail, setNewParticipantEmail] = useState<string>("");
+  const [newParticipantRole, setNewParticipantRole] = useState<
+    "Viewer" | "Admin"
+  >("Viewer");
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [userRole, setUserRole] = useState<"Admin" | "Viewer">("Viewer");
+
+  const [isOwner, setIsOwner] = useState<boolean>(false);
+  const [listName, setListName] = useState<string>("Task Manager");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (listId && user && user.email) {
@@ -52,24 +64,24 @@ const TaskPage = () => {
     }
   }, [listId, user]);
 
-  const fetchListName = async () => {
+  const fetchListName = async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
-      const name = await getListNameById(listId);
+      const name: string = await getListNameById(listId);
       setListName(name);
     } catch (error) {
       console.error("Error fetching list name:", error);
       setError("Failed to load list name.");
-      setListName("Task Manager"); // Fallback name
+      setListName("Task Manager");
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (): Promise<void> => {
     try {
-      const fetchedTasks = await getTasksByListId(listId);
+      const fetchedTasks = (await getTasksByListId(listId)) as Task[];
       setTasks(fetchedTasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -77,25 +89,26 @@ const TaskPage = () => {
     }
   };
 
-  const fetchTaskListData = async () => {
+  const fetchTaskListData = async (): Promise<void> => {
     try {
       if (!listId) {
         console.error("listId is undefined");
         return;
       }
-      const taskList = await getTaskListById(listId);
-      const participantsList = taskList.participants || [];
+
+      const taskList = (await getTaskListById(listId)) as TaskList;
+      const participantsList: Participant[] = taskList.participants || [];
       setParticipants(participantsList);
 
-      const ownerEmail = taskList.owner;
-      setIsOwner(user.email === ownerEmail);
+      const ownerEmail: string = taskList.owner;
+      setIsOwner(user?.email === ownerEmail);
 
-      const currentUserParticipant = participantsList.find(
-        (p) => p.email === user.email
-      );
-      const roleFromParticipants = currentUserParticipant?.role || "Viewer";
+      const currentUserParticipant: Participant | undefined =
+        participantsList.find((p: Participant) => p.email === user?.email);
+      const roleFromParticipants: "Admin" | "Viewer" =
+        currentUserParticipant?.role || "Viewer";
 
-      setUserRole(user.email === ownerEmail ? "Admin" : roleFromParticipants);
+      setUserRole(user?.email === ownerEmail ? "Admin" : roleFromParticipants);
     } catch (error) {
       console.error("Error fetching task list data:", error);
       setParticipants([]);
@@ -105,7 +118,7 @@ const TaskPage = () => {
     }
   };
 
-  const handleAddTask = async () => {
+  const handleAddTask = async (): Promise<void> => {
     if (userRole !== "Admin") return;
     if (!newTaskName.trim() || !description.trim()) return;
     try {
@@ -119,7 +132,7 @@ const TaskPage = () => {
     }
   };
 
-  const handleUpdateTask = async (taskId) => {
+  const handleUpdateTask = async (taskId: string): Promise<void> => {
     if (userRole !== "Admin") return;
     if (!editedTaskName.trim() || !editedTaskDescription.trim()) return;
     try {
@@ -137,7 +150,10 @@ const TaskPage = () => {
     }
   };
 
-  const handleDeleteTask = async (listId, taskId) => {
+  const handleDeleteTask = async (
+    listId: string,
+    taskId: string
+  ): Promise<void> => {
     if (userRole !== "Admin") return;
     try {
       await deleteTaskFromList(listId, taskId);
@@ -148,7 +164,10 @@ const TaskPage = () => {
     }
   };
 
-  const handleToggleCompletion = async (taskId, completed) => {
+  const handleToggleCompletion = async (
+    taskId: string,
+    completed: boolean
+  ): Promise<void> => {
     try {
       await toggleTaskCompletion(listId, taskId, !completed);
       fetchTasks();
@@ -158,19 +177,21 @@ const TaskPage = () => {
     }
   };
 
-  const handleAddParticipant = async () => {
+  const handleAddParticipant = async (): Promise<void> => {
     if (userRole !== "Admin") return;
     if (!newParticipantEmail.trim() || !listId) return;
     if (!/\S+@\S+\.\S+/.test(newParticipantEmail)) {
       alert("Please enter a valid email address");
       return;
     }
-    if (participants.some((p) => p.email === newParticipantEmail)) {
+    if (
+      participants.some((p: Participant) => p.email === newParticipantEmail)
+    ) {
       alert("This user is already a participant");
       return;
     }
     try {
-      const updatedParticipants = [
+      const updatedParticipants: Participant[] = [
         ...participants,
         { email: newParticipantEmail, role: newParticipantRole },
       ];
@@ -240,7 +261,9 @@ const TaskPage = () => {
             <select
               className="p-4 rounded-lg bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200"
               value={newParticipantRole}
-              onChange={(e) => setNewParticipantRole(e.target.value)}
+              onChange={(e) =>
+                setNewParticipantRole(e.target.value as "Viewer" | "Admin")
+              }
             >
               <option value="Viewer">Viewer</option>
               <option value="Admin">Admin</option>
@@ -260,7 +283,7 @@ const TaskPage = () => {
             </h3>
             {participants.length > 0 ? (
               <ul className="list-disc pl-5">
-                {participants.map((participant, index) => (
+                {participants.map((participant: Participant, index: number) => (
                   <li key={index} className="text-gray-600">
                     {participant.email} - {participant.role}
                   </li>
@@ -274,7 +297,7 @@ const TaskPage = () => {
       )}
 
       <div className="space-y-6">
-        {tasks.map((task) => (
+        {tasks.map((task: Task) => (
           <div
             key={task.id}
             className="flex items-center justify-between bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"

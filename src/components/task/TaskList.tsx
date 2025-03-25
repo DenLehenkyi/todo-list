@@ -7,13 +7,14 @@ import {
   updateTaskList,
 } from "@/firebase/taskListService";
 import TaskListItem from "./TaskListItem";
+import type { Task, TaskList } from "@/types/types";
 import { useRouter } from "next/router";
 
 const TaskList = () => {
-  const [taskLists, setTaskLists] = useState([]);
+  const [taskLists, setTaskLists] = useState<TaskList[]>([]);
   const [newListName, setNewListName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useUser();
   const router = useRouter();
 
@@ -52,22 +53,22 @@ const TaskList = () => {
     }
   };
 
-  const getUserRoleForList = (list) => {
-    if (list.owner === user.email) {
+  const getUserRoleForList = (list: TaskList) => {
+    if (list.owner === user?.email) {
       return "Admin";
     }
-    const participant = list.participants.find((p) => p.email === user.email);
+    const participant = list.participants.find((p) => p.email === user?.email);
     return participant ? participant.role : "Viewer";
   };
 
-  const isSharedList = (list) => {
+  const isSharedList = (list: TaskList) => {
     return (
-      list.owner !== user.email &&
-      list.participants.some((p) => p.email === user.email)
+      list.owner !== user?.email &&
+      list.participants.some((p) => p.email === user?.email)
     );
   };
 
-  const handleDeleteList = async (id: string, list) => {
+  const handleDeleteList = async (id: string, list: TaskList) => {
     const userRole = getUserRoleForList(list);
     if (userRole !== "Admin") {
       alert("Only Admin or the owner can delete lists!");
@@ -87,7 +88,11 @@ const TaskList = () => {
     }
   };
 
-  const handleUpdateList = async (id: string, newName: string, list) => {
+  const handleUpdateList = async (
+    id: string,
+    newName: string,
+    list: TaskList
+  ) => {
     const userRole = getUserRoleForList(list);
     if (userRole !== "Admin") {
       alert("Only Admin or the owner can update lists!");
@@ -103,7 +108,7 @@ const TaskList = () => {
     }
   };
 
-  const handleClickOnList = (listId) => {
+  const handleClickOnList = (listId: string) => {
     router.push(`/taskList/${listId}`);
   };
 
@@ -143,7 +148,9 @@ const TaskList = () => {
                 userRole={getUserRoleForList(list)}
                 isShared={isSharedList(list)}
                 onDelete={() => handleDeleteList(list.id, list)}
-                onUpdate={(newName) => handleUpdateList(list.id, newName, list)}
+                onUpdate={(newName: string) =>
+                  handleUpdateList(list.id, newName, list)
+                }
                 onClickList={() => handleClickOnList(list.id)}
               />
             </div>

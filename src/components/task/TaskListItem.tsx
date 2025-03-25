@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
+import { TaskListItemProps } from "@/types/types";
 
-const TaskListItem = ({
+const TaskListItem: React.FC<TaskListItemProps> = ({
   list,
   userRole,
   isShared,
   onDelete,
   onUpdate,
-  onClickList = () => {}, // Default to an empty function if not provided
+  onClickList = () => {},
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [listName, setListName] = useState(list.name);
@@ -22,13 +23,13 @@ const TaskListItem = ({
     setIsEditing(false);
   };
 
-  const handleViewClick = (e) => {
+  const handleViewClick = (e: { stopPropagation: () => void }) => {
     e.stopPropagation();
     if (typeof onClickList === "function") {
-      onClickList(); // Call onClickList only if it's a function
+      onClickList();
     } else {
       console.warn("onClickList is not a function, navigating directly...");
-      router.push(`/taskList/${list.id}`); // Fallback navigation
+      router.push(`/taskList/${list.id}`);
     }
   };
 
@@ -114,7 +115,7 @@ const TaskListItem = ({
             </button>
             <button
               className="bg-purple-500 text-white px-4 py-2 rounded-lg shadow-md"
-              onClick={handleViewClick} // Use the new handler
+              onClick={handleViewClick}
             >
               View
             </button>

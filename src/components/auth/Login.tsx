@@ -3,6 +3,7 @@ import { useUser } from "@/contexts/AccountContext";
 import { useRouter } from "next/router";
 import { loginUser } from "@/firebase/firebaseAuth";
 import Link from "next/link";
+import { User } from "@/types/types";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -20,6 +21,7 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
     try {
       const {
         uid,
@@ -28,7 +30,7 @@ const Login = () => {
         token,
       } = await loginUser(email, password);
 
-      const userData = {
+      const userData: User = {
         email: loggedInEmail,
         uid,
         role,
@@ -42,8 +44,9 @@ const Login = () => {
 
       router.push("/home");
     } catch (error) {
-      console.error("Login error:", error.message);
-      setError(error.message);
+      const errorMessage = (error as any).message;
+      console.error("Login error:", errorMessage);
+      setError(errorMessage);
     }
   };
 
