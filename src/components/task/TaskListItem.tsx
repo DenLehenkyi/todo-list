@@ -1,41 +1,69 @@
 import React, { useState } from "react";
-import { updateTaskListParticipants } from "@/firebase/taskService";
+import { useRouter } from "next/router";
 
-const TaskListItem = ({ list, userRole, onDelete, onUpdate }) => {
+const TaskListItem = ({
+  list,
+  userRole,
+  isShared,
+  onDelete,
+  onUpdate,
+  onClickList = () => {}, // Default to an empty function if not provided
+}) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [participants, setParticipants] = useState([]);
-  const [newEmail, setNewEmail] = useState("");
   const [listName, setListName] = useState(list.name);
-  const [isClickedAddUser, setIsClickedAddUser] = useState(false);
+  const router = useRouter();
 
   const handleSave = () => {
+    if (!listName.trim()) {
+      alert("List name cannot be empty!");
+      return;
+    }
     onUpdate(listName);
     setIsEditing(false);
   };
 
-  const handleAddUser = async () => {
-    setIsClickedAddUser(true);
-    if (newEmail !== "") {
-      participants.push(newEmail);
-      setParticipants(participants);
-      setNewEmail("");
+  const handleViewClick = (e) => {
+    e.stopPropagation();
+    if (typeof onClickList === "function") {
+      onClickList(); // Call onClickList only if it's a function
+    } else {
+      console.warn("onClickList is not a function, navigating directly...");
+      router.push(`/taskList/${list.id}`); // Fallback navigation
     }
-
-    setIsClickedAddUser(false);
-    await updateTaskListParticipants(list.id, participants);
   };
 
   return (
     <div className="bg-white p-6 shadow-lg rounded-lg flex items-center justify-between mb-4 w-full">
-      {isEditing && userRole === "Admin" ? (
-        <input
-          className="border p-2 rounded mr-4 flex-grow"
-          value={listName}
-          onChange={(e) => setListName(e.target.value)}
-        />
-      ) : (
-        <span className="font-semibold text-xl text-gray-800">{list.name}</span>
-      )}
+      <div className="flex items-center space-x-3">
+        {isEditing && userRole === "Admin" ? (
+          <input
+            className="border p-2 rounded mr-4 flex-grow"
+            value={listName}
+            onChange={(e) => setListName(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            placeholder="Edit list name"
+          />
+        ) : (
+          <span
+            className="font-semibold text-xl text-gray-800 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (typeof onClickList === "function") {
+                onClickList();
+              } else {
+                router.push(`/taskList/${list.id}`);
+              }
+            }}
+          >
+            {list.name}
+          </span>
+        )}
+        {isShared && (
+          <span className="text-sm text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
+            Shared
+          </span>
+        )}
+      </div>
 
       <div className="flex space-x-4">
         {userRole === "Admin" && (
@@ -43,21 +71,30 @@ const TaskListItem = ({ list, userRole, onDelete, onUpdate }) => {
             {isEditing ? (
               <button
                 className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-md"
-                onClick={handleSave}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSave();
+                }}
               >
                 Save
               </button>
             ) : (
               <button
                 className="bg-orange-500 text-white px-4 py-2 rounded-lg shadow-md"
-                onClick={() => setIsEditing(true)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditing(true);
+                }}
               >
                 Edit
               </button>
             )}
             <button
               className="bg-red-700 text-white px-4 py-2 rounded-lg shadow-md flex items-center"
-              onClick={onDelete}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -77,19 +114,10 @@ const TaskListItem = ({ list, userRole, onDelete, onUpdate }) => {
             </button>
             <button
               className="bg-purple-500 text-white px-4 py-2 rounded-lg shadow-md"
-              onClick={handleAddUser}
+              onClick={handleViewClick} // Use the new handler
             >
-              Add another user
+              View
             </button>
-            {isClickedAddUser && (
-              <input
-                type="email"
-                placeholder="User email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                className="border p-2 rounded mr-4 flex-grow"
-              ></input>
-            )}
           </>
         )}
       </div>

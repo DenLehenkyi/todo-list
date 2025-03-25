@@ -1,67 +1,76 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useUser } from "@/contexts/AccountContext";
 import { useRouter } from "next/router";
-import { getAuth, signInWithEmailAndPassword, getDoc } from "firebase/auth";
-import { auth } from "@/firebase/firebaseConfig";
+import { loginUser } from "@/firebase/firebaseAuth";
 import Link from "next/link";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { setUser, setToken } = useUser();
+  const [error, setError] = useState<string | null>(null);
+  const { setUser, setToken, user, loading } = useUser();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push("/home");
+    }
+  }, [user, loading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = userCredential.user;
-      console.log("User:", user);
-
-      const userRole = await getUserRole(user.uid);
+      const {
+        uid,
+        email: loggedInEmail,
+        role,
+        token,
+      } = await loginUser(email, password);
 
       const userData = {
-        email: user.email,
-        uid: user.uid,
-        role: userRole,
+        email: loggedInEmail,
+        uid,
+        role,
       };
 
       setUser(userData);
-      localStorage.setItem("authToken", await user.getIdToken());
+      localStorage.setItem("authToken", token);
       localStorage.setItem("user", JSON.stringify(userData));
 
-      setToken(await user.getIdToken());
+      setToken(token);
 
       router.push("/home");
     } catch (error) {
       console.error("Login error:", error.message);
+      setError(error.message);
     }
   };
 
-  const getUserRole = async (uid: string) => {
-    try {
-      const userDoc = await getDoc(doc(db, "users", uid));
-      if (userDoc.exists()) {
-        return userDoc.data().role;
-      }
-      // return "Viewer";
-    } catch (error) {
-      console.error("Error fetching user role:", error);
-      // return "Viewer";
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    );
+  }
+
+  if (user) return null;
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-100 text-gray-600">
-      <h1 className="text-3xl  text-gray-900 font-bold mb-6 ">Login</h1>
+    <div className="flex flex-col items-center justify-center h-screen bg-gray-100 text-gray-600 rounded-">
       <form
         onSubmit={handleLogin}
-        className="bg-white p-6 rounded shadow-md w-full max-w-sm"
+        className="bg-white p-6 rounded shadow-md w-full max-w-sm rounded-2xl"
       >
+        <h1 className="text-3xl text-gray-900 font-bold mb-6 text-center">
+          Login
+        </h1>
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+            {error}
+          </div>
+        )}
         <div className="mb-4">
           <label
             className="block text-gray-700 text-sm font-bold mb-2"
@@ -86,7 +95,7 @@ const Login = () => {
             Password
           </label>
           <input
-            className=" text-gray-500 w-full p-2 border border-gray-300 rounded-2xl"
+            className="text-gray-500 w-full p-2 border border-gray-300 rounded-2xl"
             type="password"
             placeholder="Password"
             value={password}
@@ -97,8 +106,8 @@ const Login = () => {
           Login
         </button>
         <div className="flex flex-col items-center justify-center mt-4">
-          <p className="mt-4 text-center ">Don`t have an account? </p>
-          <Link href="register" className="text-purple-900 ">
+          <p className="mt-4 text-center">Don’t have an account?</p>
+          <Link href="/register" className="text-purple-900">
             Register
           </Link>
         </div>
